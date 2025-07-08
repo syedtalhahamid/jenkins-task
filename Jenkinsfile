@@ -27,12 +27,8 @@ pipeline {
 
         stage('Deploy to EC2') {
             steps {
-                sshagent(credentials: ['my-new-key-1']) {
-                    bat """
-                        ssh -o StrictHostKeyChecking=no %EC2_HOST% "docker pull %IMAGE_NAME% && docker stop flask || true && docker rm flask || true && docker run -d -p 5000:5000 --name flask %IMAGE_NAME%"
-                    """
+                    bat 'ssh ec2-user@16.171.136.221 "docker pull talhahamidsyed/flask-app && docker run -d -p 80:5000 talhahamidsyed/flask-app"'
                 }
-            }
         }
 
     }
