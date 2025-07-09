@@ -59,16 +59,16 @@ pipeline {
 
         stage('Build Docker Image') {
             steps {
-                sh 'docker build -t $IMAGE_NAME .'
+                bat 'docker build -t $IMAGE_NAME .'
             }
         }
 
         stage('Push to DockerHub') {
             steps {
                 withCredentials([usernamePassword(credentialsId: 'dockerhub', usernameVariable: 'USER', passwordVariable: 'PASS')]) {
-                    sh '''
-                        echo "$PASS" | docker login -u "$USER" --password-stdin
-                        docker push $IMAGE_NAME
+                    bat '''
+                        echo %PASS% | docker login -u %USER% --password-stdin
+                        docker push %IMAGE_NAME%
                     '''
                 }
             }
@@ -77,13 +77,13 @@ pipeline {
         stage('Deploy to EC2') {
             steps {
                 sshagent(credentials: ['my-new-key-1']) {
-                    sh '''
-                        ssh -o StrictHostKeyChecking=no $EC2_HOST "
+                    bat '''
+                        ssh -o StrictHostKeyChecking=no %EC2_HOST% "
                             docker login &&
                             docker pull $IMAGE_NAME &&
                             docker stop flask || true &&
                             docker rm flask || true &&
-                            docker run -d -p 5000:5000 --name flask $IMAGE_NAME
+                            docker run -d -p 5000:5000 --name flask %IMAGE_NAME%
                         "
                     '''
                 }
