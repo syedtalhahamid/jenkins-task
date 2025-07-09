@@ -7,9 +7,15 @@ pipeline {
                 git 'https://github.com/syedtalhahamid/jenkins-task.git'
             }
         }
-
+        stage('Test PowerShell') {
+            steps {
+                powershell 'Write-Output "PowerShell is working!"'
+            }
+        }    
+        
         stage('Docker Build') {
             steps {
+                
                 powershell '''
                     docker version
                     docker build -t talhahamidsyed/flask-app:latest .
