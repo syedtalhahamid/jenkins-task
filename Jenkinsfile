@@ -12,7 +12,7 @@ pipeline {
             steps {
                 powershell '''
                     docker version
-                    docker build -t talhahamidsyed/flask-app .
+                    docker build -t talhahamidsyed/flask-app:latest .
                 '''
             }
         }
