@@ -4,7 +4,7 @@ pipeline {
     stages {
         stage('Git Pull') {
             steps {
-                git 'https://github.com/talhahamidsyed/jenkins-task.git'
+                git 'https://github.com/syedtalhahamid/jenkins-task.git'
             }
         }
 
