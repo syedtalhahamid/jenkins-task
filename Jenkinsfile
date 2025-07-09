@@ -15,8 +15,8 @@ pipeline {
         
         stage('Docker Build') {
             steps {
-                bat '''
-                    docker build -t talhahamidsyed/flask-app .
+                powershell ''' Write-Output
+                    "docker build -t talhahamidsyed/flask-app ."
                 '''
             }
         }
