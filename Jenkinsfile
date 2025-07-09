@@ -28,7 +28,7 @@ pipeline {
 stage('Deploy to EC2') {
     steps {
         // Use full path to ssh.exe (assuming OpenSSH is installed in default path)
-        bat '"C:\\Windows\\System32\\OpenSSH\\ssh.exe" ec2-user@16.171.136.221 "docker pull talhahamidsyed/flask-app && docker run -d -p 80:5000 talhahamidsyed/flask-app"'
+        bat '"C:\\Windows\\System32\\OpenSSH\\ssh.exe" -i "C:\\Users\\Team Codenera\\Downloads\\my-new-key-1.pem" ec2-user@16.171.136.221 "docker pull talhahamidsyed/flask-app && docker run -d -p 80:5000 talhahamidsyed/flask-app"'
     }
 }
 
