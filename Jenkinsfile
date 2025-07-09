@@ -59,10 +59,8 @@ pipeline {
 
         stage('Build Docker Image') {
             steps {
-            dir('flask-app') {
-                        bat 'docker build -t %IMAGE_NAME% .'
-                    }
-                }
+                       bat 'docker build -t %IMAGE_NAME% .'
+                  }
         }
 
         stage('Push to DockerHub') {
