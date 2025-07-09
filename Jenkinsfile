@@ -25,11 +25,13 @@ pipeline {
             }
         }
 
-        stage('Deploy to EC2') {
-            steps {
-                    bat 'ssh ec2-user@16.171.136.221 "docker pull talhahamidsyed/flask-app && docker run -d -p 80:5000 talhahamidsyed/flask-app"'
-                }
-        }
+stage('Deploy to EC2') {
+    steps {
+        // Use full path to ssh.exe (assuming OpenSSH is installed in default path)
+        bat '"C:\\Windows\\System32\\OpenSSH\\ssh.exe" ec2-user@16.171.136.221 "docker pull talhahamidsyed/flask-app && docker run -d -p 80:5000 talhahamidsyed/flask-app"'
+    }
+}
+
 
     }
 }
