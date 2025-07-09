@@ -30,7 +30,7 @@ pipeline {
         stage('Deploy to EC2') {
             steps {
                 // Use the sshagent wrapper with your new credential ID
-                sshagent(credentials:'my-new-key-1') {
+                sshagent(credentials: ['my-new-key-1']) {
                     // The sshagent wrapper automatically handles the private key.
                     // We add '-o StrictHostKeyChecking=no' to prevent the host key prompt.
                     // We also make the remote docker commands more robust.
