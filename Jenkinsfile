@@ -32,21 +32,34 @@ pipeline {
             }
         }
             
-              stage('Deploy Flask via SSM') {
+         stage('Deploy Flask via SSM') {
             steps {
-                script {
-                    // For Windows 'bat', we need to escape the double quotes differently.
-                    // We will escape each double quote inside the JSON with a backslash.
-                    def windowsJson = '{\\"commands\\": [\\"docker pull talhahamidsyed/flask\\", \\"docker rm -f flask || true\\", \\"docker run -d --name flask -p 80:5000 talhahamidsyed/flask\\"]}'
-                    bat """
-                        aws ssm send-command ^
-                          --document-name "AWS-RunShellScript" ^
-                          --comment "Deploying flask via Jenkins" ^
-                          --instance-ids i-0eb4223f049a2edf2 ^
-                          --parameters "${windowsJson}" ^
-                          --region eu-north-1
-                    """
-                }
+                // Use powershell for better and safer JSON handling on Windows agents
+                powershell '''
+                    # Create an array of the commands you want to run
+                    $commands = @(
+                        "docker pull talhahamidsyed/flask",
+                        "docker rm -f flask || true",
+                        "docker run -d --name flask -p 80:5000 talhahamidsyed/flask"
+                    )
+
+                    # Create a PowerShell object (hashtable) for the parameters
+                    $parameters = @{
+                        commands = $commands
+                    }
+
+                    # Convert the PowerShell object to a compact JSON string.
+                    # This is the safest way to build the JSON.
+                    $jsonParameters = $parameters | ConvertTo-Json -Compress
+
+                    # Call the aws cli, passing the properly formatted JSON string
+                    aws ssm send-command `
+                      --document-name "AWS-RunShellScript" `
+                      --comment "Deploying flask via Jenkins" `
+                      --instance-ids i-0eb4223f049a2edf2 `
+                      --parameters $jsonParameters `
+                      --region eu-north-1
+                '''
             }
         }
 
