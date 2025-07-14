@@ -29,26 +29,31 @@ pipeline {
             }
         }
 
-       stage('Deploy Flask via SSM') {
+      stage('Deploy Flask via SSM') {
     steps {
         withCredentials([
             [$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-cred-id']
         ]) {
             powershell '''
+                # Define the commands to run on the EC2 instance
                 $commands = @(
                     "docker pull talhahamidsyed/flask",
                     "docker rm -f flask || true",
                     "docker run -d --name flask -p 80:5000 talhahamidsyed/flask"
                 )
 
+                # Convert to valid JSON
                 $params = @{ commands = $commands }
-                $jsonParams = $params | ConvertTo-Json -Compress
+                $json = $params | ConvertTo-Json -Compress
 
-                # Build the AWS CLI command string safely
-                $awsCommand = "aws ssm send-command --document-name AWS-RunShellScript --comment 'DeployFlask' --instance-ids i-0eb4223f049a2edf2 --parameters '{\"commands\":$($jsonParams)}' --region eu-north-1"
+                # Escape inner quotes for --parameters string
+                $escapedJson = $json -replace '"', '\\"'
 
-                # Execute it
-                iex $awsCommand
+                # Construct AWS CLI command with proper quoting
+                $cmd = "aws ssm send-command --document-name AWS-RunShellScript --comment `"DeployFlaskFromJenkins`" --instance-ids i-0eb4223f049a2edf2 --parameters \\"$escapedJson\\" --region eu-north-1"
+
+                # Execute the command
+                iex $cmd
             '''
         }
     }
