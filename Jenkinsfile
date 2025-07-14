@@ -36,28 +36,26 @@ pipeline {
             string(credentialsId: 'AWS_SECRET_ACCESS_KEY', variable: 'AWS_SECRET_ACCESS_KEY')
         ]) {
             powershell '''
-                # Set AWS credentials
+                # Set credentials
                 $env:AWS_ACCESS_KEY_ID = "$env:AWS_ACCESS_KEY_ID"
                 $env:AWS_SECRET_ACCESS_KEY = "$env:AWS_SECRET_ACCESS_KEY"
 
-                # Define the docker commands to run on EC2
+                # Define shell commands to run on EC2
                 $commands = @(
                     "docker pull talhahamidsyed/flask",
-                    "docker rm -f flask; exit 0",
+                    "docker rm -f flask || true",
                     "docker run -d --name flask -p 80:5000 talhahamidsyed/flask"
                 )
 
-                # Create JSON parameters object
-                $params = @{ commands = $commands }
-                $json = $params | ConvertTo-Json -Compress
+                # Convert to proper escaped JSON string
+                $json = @{ commands = $commands } | ConvertTo-Json -Compress
+                $jsonEscaped = $json -replace '"', '\\"'
 
-                # Call AWS CLI with properly quoted arguments
-                & aws ssm send-command `
-                    --document-name "AWS-RunShellScript" `
-                    --comment "Deploying flask" `
-                    --instance-ids "i-0eb4223f049a2edf2" `
-                    --parameters $json `
-                    --region "eu-north-1"
+                # Construct the full AWS CLI command string
+                $cmd = "aws ssm send-command --document-name AWS-RunShellScript --comment \"Deploying flask\" --instance-ids i-0eb4223f049a2edf2 --parameters \"" + $jsonEscaped + "\" --region eu-north-1"
+
+                # Execute it
+                iex $cmd
             '''
         }
     }
