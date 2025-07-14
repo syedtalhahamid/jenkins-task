@@ -35,8 +35,17 @@ pipeline {
                     [$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-cred-id']
                 ]) {
                     powershell '''
-                        $json = '{\"commands\":[\"docker pull talhahamidsyed/flask\",\"docker rm -f flask || true\",\"docker run -d --name flask -p 80:5000 talhahamidsyed/flask\"]}'
+                        # Step 1: Define shell commands for EC2 to run
+                        $commands = @(
+                            "docker pull talhahamidsyed/flask",
+                            "docker rm -f flask || true",
+                            "docker run -d --name flask -p 80:5000 talhahamidsyed/flask"
+                        )
         
+                        # Step 2: Manually construct valid JSON string for AWS CLI
+                        $json = '{\\"commands\\":[\\"' + ($commands -join '\\",\\"') + '\\"]}'
+        
+                        # Step 3: Send the SSM command
                         aws ssm send-command `
                             --document-name "AWS-RunShellScript" `
                             --comment "DeployFlask" `
@@ -47,6 +56,7 @@ pipeline {
                 }
             }
         }
+
 
     }
 }
