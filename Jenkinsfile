@@ -127,26 +127,16 @@ pipeline {
             }
         }
             
-        stage('Deploy to EC2 via SSM') {
+        stage('Deploy Flask via SSM') {
             steps {
-                script {
-                    // Define the Docker commands to be executed on the EC2 instance
-            def dockerCommands = '"[\\"docker pull talhahamidsyed/flask\\", \\"docker rm -f flask || true\\", \\"docker run -d --name flask -p 80:5000 talhahamidsyed/flask\\"]"'
-
-
-                    // Use AWS CLI to send the command to the EC2 instance via SSM Run Command
-                    // Ensure AWS CLI is configured on the Jenkins agent with permissions to use SSM
-                    bat """
-                        aws ssm send-command ^
-                          --document-name "AWS-RunShellScript" ^
-                          --comment "Deploying flask via Jenkins" ^
-                          --instance-ids i-0eb4223f049a2edf2 ^
-                          --parameters commands=${dockerCommands} ^
-                          --region eu-north-1
-                        """
-
-                }
+                bat '''
+                aws ssm send-command ^
+                  --document-name "AWS-RunShellScript" ^
+                  --comment "Deploying flask via Jenkins" ^
+                  --instance-ids i-0eb4223f049a2edf2 ^
+                  --parameters "{\\"commands\\":[\\"docker pull talhahamidsyed/flask\\", \\"docker rm -f flask || true\\", \\"docker run -d --name flask -p 80:5000 talhahamidsyed/flask\\"]}" ^
+                  --region eu-north-1
+                '''
             }
         }
-    }
 }
