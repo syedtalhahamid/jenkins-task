@@ -29,34 +29,34 @@ pipeline {
             }
         }
 
-   stage('Deploy Flask via SSM') {
-    steps {
-        withCredentials([
-            [$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-cred-id']
-        ]) {
-            powershell '''
-                $commands = @(
-                    "docker pull talhahamidsyed/flask",
-                    "docker rm -f flask || true",
-                    "docker run -d --name flask -p 80:5000 talhahamidsyed/flask"
-                )
-
-                # Build JSON string manually for AWS CLI
-                $json = @{
-                    commands = $commands
-                } | ConvertTo-Json -Compress
-
-                # Use aws cli directly with correct parameter format
-                aws ssm send-command `
-                    --document-name "AWS-RunShellScript" `
-                    --comment "Deploy Flask" `
-                    --instance-ids "i-0eb4223f049a2edf2" `
-                    --parameters @{commands=$commands} `
-                    --region "eu-north-1"
-            '''
+       stage('Deploy Flask via SSM') {
+            steps {
+                withCredentials([
+                    [$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-credentials']
+                ]) {
+                    powershell '''
+                        # 1. Commands to run
+                        $commands = @(
+                            "docker pull talhahamidsyed/flask",
+                            "docker rm -f flask || true",
+                            "docker run -d --name flask -p 80:5000 talhahamidsyed/flask"
+                        )
+        
+                        # 2. Create a proper JSON string manually
+                        $jsonString = '{\"commands\":[\"' + ($commands -join '","') + '\"]}'
+        
+                        # 3. Run the AWS CLI with valid JSON
+                        aws ssm send-command `
+                            --document-name "AWS-RunShellScript" `
+                            --comment "Deploy Flask" `
+                            --instance-ids "i-0eb4223f049a2edf2" `
+                            --parameters $jsonString `
+                            --region "eu-north-1"
+                    '''
+                }
+            }
         }
-    }
-}
+
 
     }
 }
