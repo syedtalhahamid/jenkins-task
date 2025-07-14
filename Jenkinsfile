@@ -32,40 +32,35 @@ pipeline {
             }
         }
             
-        stage('Deploy Flask via SSM') {
+       stage('Deploy Flask via SSM') {
             steps {
                 powershell '''
-                    # This is the most robust way to handle JSON and external commands in PowerShell.
-
-                    # 1. Define the commands as a PowerShell array.
-                    $commands = @(
+                    # 1. Define the commands you want to run on the EC2 instance.
+                    $commandsToRun = @(
                         "docker pull talhahamidsyed/flask",
                         "docker rm -f flask || true",
                         "docker run -d --name flask -p 80:5000 talhahamidsyed/flask"
                     )
 
-                    # 2. Create the parameter object.
+                    # 2. Create a PowerShell object that matches the JSON structure required by the --parameters argument.
                     $parametersObject = @{
-                        commands = $commands
+                        commands = $commandsToRun
                     }
 
-                    # 3. Convert the object to a valid JSON string.
-                    # The -Depth parameter is a good practice to ensure all levels are converted.
-                    $jsonParameters = $parametersObject | ConvertTo-Json -Compress -Depth 4
+                    # 3. Convert the PowerShell object into a compact, valid JSON string.
+                    # This is the safest way to generate the JSON.
+                    $jsonString = $parametersObject | ConvertTo-Json -Compress -Depth 4
 
-                    # 4. Use "Splatting" to pass arguments safely to the external aws.exe command.
-                    # We create a hashtable where keys are the parameter names (without the --)
-                    # and values are the parameter values. This avoids all command-line quoting issues.
-                    $awsSsmParams = @{
-                        DocumentName = "AWS-RunShellScript"
-                        Comment      = "Deploying flask via Jenkins"
-                        InstanceIds  = "i-0eb4223f049a2edf2"
-                        Parameters   = $jsonParameters # Pass the complete, correct JSON string here
-                        Region       = "eu-north-1"
-                    }
-
-                    # 5. Execute the command. The @awsSsmParams tells PowerShell to use the hashtable for the arguments.
-                    aws ssm send-command @awsSsmParams
+                    # 4. Manually build and execute the command.
+                    # The crucial part is wrapping the $jsonString variable in single quotes ('$jsonString').
+                    # This tells PowerShell to pass the entire, complex JSON string as a single argument to aws.exe,
+                    # protecting all the quotes and special characters inside it.
+                    aws ssm send-command `
+                      --document-name "AWS-RunShellScript" `
+                      --comment "Deploying flask via Jenkins" `
+                      --instance-ids "i-0eb4223f049a2edf2" `
+                      --parameters '$jsonString' `
+                      --region "eu-north-1"
                 '''
             }
         }
