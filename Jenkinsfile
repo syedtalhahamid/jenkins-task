@@ -1,98 +1,3 @@
-// pipeline {
-//     agent any
-
-//     stages {
-//         stage('Git Pull') {
-//             steps {
-//                 git 'https://github.com/syedtalhahamid/jenkins-task.git'
-//             }
-//         }
-//         stage('Test PowerShell') {
-//             steps {
-//                 powershell 'Write-Output "PowerShell is working!"'
-//             }
-//         }    
-        
-//         stage('Docker Build') {
-//             steps {
-//                 bat '''
-//                     docker build -t talhahamidsyed/flask-app .
-//                 '''
-//             }
-//         }
-
-//         stage('Docker Push') {
-//             steps {
-//                 withCredentials([usernamePassword(credentialsId: 'dockerhub-cred', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
-//                     bat 'docker login -u %DOCKER_USER% -p %DOCKER_PASS%'
-//                     bat 'docker push talhahamidsyed/flask-app'
-//                 }
-//             }
-//         }
-
-//         stage('Deploy to EC2') {
-//             steps {
-//                 bat '''
-//                 "C:\\Windows\\System32\\OpenSSH\\ssh.exe" -i "C:\\Users\\Team Codenera\\.ssh\\my-new-key-1.pem" ubuntu@16.171.136.221 ^
-//                 "docker pull talhahamidsyed/flask-app && docker rm -f flask-app || true && docker run -d --name flask-app -p 80:5000 talhahamidsyed/flask-app"
-//                 '''
-//             }
-//         }
-
-//     }
-// }
-
-
-// pipeline {
-//     agent any
-
-//     stages {
-//         stage('Git Pull') {
-//             steps {
-//                 git 'https://github.com/syedtalhahamid/jenkins-task.git'
-//             }
-//         }
-//         stage('Test PowerShell') {
-//             steps {
-//                 // Ensure PowerShell is available on your Jenkins agent
-//                 powershell 'Write-Output "PowerShell is working!"' 
-//             }
-//         }    
-        
-//         stage('Docker Build') {
-//             steps {
-//                 bat '''
-//                     docker build -t talhahamidsyed/flask-app .
-//                 '''
-//             }
-//         }
-
-//         stage('Docker Push') {
-//             steps {
-//                 withCredentials([usernamePassword(credentialsId: 'dockerhub-cred', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
-//                     bat 'docker login -u %DOCKER_USER% -p %DOCKER_PASS%'
-//                     bat 'docker push talhahamidsyed/flask-app'
-//                 }
-//             }
-//         }
-
-//         stage('Deploy to EC2') {
-//             steps {
-//                 script {
-//                     // Use the SSH agent step to manage the SSH key securely
-//                     // Replace 'your-ec2-ssh-credential-id' with the actual credential ID from Jenkins
-//                     sshagent(credentials: ['my-new-key-1']) {
-//                         // The following command will be executed on the Jenkins agent,
-//                         // which then connects to the EC2 instance via SSH
-//                         sh "ssh -o StrictHostKeyChecking=no ubuntu@16.171.136.221 \"docker pull talhahamidsyed/flask-app && docker rm -f flask-app || true && docker run -d --name flask-app -p 80:5000 talhahamidsyed/flask-app\""
-//                     }
-//                 }
-//             }
-//         }
-
-//     }
-// }
-
 pipeline {
     agent any // You can define a specific agent label if you have multiple agents, for example: label 'your-windows-jenkins-agent'
 
@@ -129,16 +34,18 @@ pipeline {
             
         stage('Deploy Flask via SSM') {
             steps {
-                bat"""
-                    aws ssm send-command ^
-                  --document-name "AWS-RunShellScript" ^
-                  --comment "Deploying flask via Jenkins" ^
-                  --instance-ids i-0eb4223f049a2edf2 ^
-                  --parameters "{\"commands\":[\"docker pull talhahamidsyed/flask\", \"docker rm -f flask || true\", \"docker run -d --name flask -p 80:5000 talhahamidsyed/flask\"]}" ^
-                  --region eu-north-1
-                """
+                script {
+                    def paramsJson = '{\\"commands\\":[\\"docker pull talhahamidsyed/flask\\", \\"docker rm -f flask || true\\", \\"docker run -d --name flask -p 80:5000 talhahamidsyed/flask\\"]}'
+                    bat """
+                        aws ssm send-command ^
+                          --document-name "AWS-RunShellScript" ^
+                          --comment "Deploying flask via Jenkins" ^
+                          --instance-ids i-0eb4223f049a2edf2 ^
+                          --parameters "${paramsJson}" ^
+                          --region eu-north-1
+                    """
+                }
             }
         }
-
     }    
 }
