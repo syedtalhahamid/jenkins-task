@@ -29,7 +29,7 @@ pipeline {
             }
         }
 
-        stage('Deploy Flask via SSM') {
+       stage('Deploy Flask via SSM') {
     steps {
         withCredentials([
             [$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-cred-id']
@@ -44,16 +44,11 @@ pipeline {
                 $params = @{ commands = $commands }
                 $jsonParams = $params | ConvertTo-Json -Compress
 
-                $args = @(
-                    "ssm", "send-command",
-                    "--document-name", "AWS-RunShellScript",
-                    "--comment", 'Deploy Flask via Jenkins',
-                    "--instance-ids", "i-0eb4223f049a2edf2",
-                    "--parameters", $jsonParams,
-                    "--region", "eu-north-1"
-                )
+                # Build the AWS CLI command string safely
+                $awsCommand = "aws ssm send-command --document-name AWS-RunShellScript --comment 'DeployFlask' --instance-ids i-0eb4223f049a2edf2 --parameters '{\"commands\":$($jsonParams)}' --region eu-north-1"
 
-                Start-Process -FilePath "aws" -ArgumentList $args -NoNewWindow -Wait
+                # Execute it
+                iex $awsCommand
             '''
         }
     }
