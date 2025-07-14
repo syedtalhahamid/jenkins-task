@@ -126,41 +126,28 @@ pipeline {
                 }
             }
         }
-
+            
         stage('Deploy to EC2') {
             steps {
                 script {
-                    // Use the SSH agent step to manage the SSH key securely
-                    // Replace 'my-new-key-1' with the actual credential ID from Jenkins
                     sshagent(credentials: ['my-new-key-1']) {
-                        // Check if the container exists before stopping/removing
-                        def containerExists = bat(script: 'docker ps -a --filter "name=flask-app" --format "{{.ID}}"', returnStdout: true).trim()
-
-                        def deployCommand = """
-                            docker pull talhahamidsyed/flask-app
+                        def deployCommand = '''
+                            docker pull talhahamidsyed/flask-app &&
+                            docker stop flask-app || true &&
+                            docker rm flask-app || true &&
+                            docker run -d --name flask-app -p 80:5000 talhahamidsyed/flask-app
+                        '''
+        
+                        // Use powershell instead of bat to ensure better compatibility
+                        powershell """
+                            ssh -o StrictHostKeyChecking=no ubuntu@16.171.136.221 \\
+                            '${deployCommand.replaceAll("\n", " ")}'
                         """
-
-                        if (containerExists) {
-                            deployCommand += """
-                                && docker stop flask-app
-                                && docker rm -f flask-app
-                            """
-                        } else {
-                            echo 'Container "flask-app" not found on EC2, skipping stop and remove.'
-                        }
-
-                        deployCommand += """
-                            && docker run -d --name flask-app -p 80:5000 talhahamidsyed/flask-app
-                        """
-                        
-                        // Execute the SSH command
-                        // The `bat` command is used to execute the SSH client on the Windows Jenkins agent
-                        // Ensure 'ssh.exe' is in the Jenkins agent's PATH or provide its full path
-                        bat """ssh -o StrictHostKeyChecking=no ubuntu@16.171.136.221 \"${deployCommand}\""""
                     }
                 }
             }
         }
+
     }
 
     post {
