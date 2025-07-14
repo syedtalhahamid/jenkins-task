@@ -35,32 +35,29 @@ pipeline {
      stage('Deploy Flask via SSM') {
     steps {
         powershell '''
-            # Define your commands
+            # Define the commands
             $commands = @(
                 "docker pull talhahamidsyed/flask",
                 "docker rm -f flask; exit 0",
                 "docker run -d --name flask -p 80:5000 talhahamidsyed/flask"
             )
 
-            # Prepare the parameters hashtable
+            # Create the parameters object
             $params = @{ commands = $commands }
 
-            # Convert to JSON and escape double quotes
+            # Convert to compact JSON and escape quotes
             $json = $params | ConvertTo-Json -Compress
-            $escapedJson = $json -replace '"', '\"'
+            $escapedJson = '"' + $json.Replace('"', '\\"') + '"'
 
-            # Run the AWS SSM command
-            $command = @"
-aws ssm send-command `
-  --document-name "AWS-RunShellScript" `
-  --comment "Deploying flask via Jenkins" `
-  --instance-ids "i-0eb4223f049a2edf2" `
-  --parameters "$escapedJson" `
-  --region "eu-north-1"
-"@
-
-            # Execute the command
-            iex $command
+            # Run the AWS CLI with escaped JSON
+            Start-Process -FilePath "aws" -ArgumentList @(
+                "ssm", "send-command",
+                "--document-name", "AWS-RunShellScript",
+                "--comment", "Deploying flask via Jenkins",
+                "--instance-ids", "i-0eb4223f049a2edf2",
+                "--parameters", $escapedJson,
+                "--region", "eu-north-1"
+            ) -NoNewWindow -Wait
         '''
     }
 }
