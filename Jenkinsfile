@@ -37,21 +37,28 @@ pipeline {
             powershell '''
                 $commands = @(
                     "docker pull talhahamidsyed/flask",
-                    "docker rm -f flask || true",
+                    "docker rm -f flask ; exit 0",
                     "docker run -d --name flask -p 80:5000 talhahamidsyed/flask"
                 )
 
                 $params = @{ "commands" = $commands }
-
-                # Convert to JSON and escape for CLI
                 $jsonParams = $params | ConvertTo-Json -Compress
-                $escapedJson = $jsonParams.Replace('"', '\\"')
 
-                # Build the full command as a string
-                $cmd = "aws ssm send-command --document-name AWS-RunShellScript --comment 'DeployFlaskFromJenkins' --instance-ids i-0eb4223f049a2edf2 --parameters `"{\\\"commands\\\":[\\\"docker pull talhahamidsyed/flask\\\",\\\"docker rm -f flask || true\\\",\\\"docker run -d --name flask -p 80:5000 talhahamidsyed/flask\\\"]}`" --region eu-north-1"
+                # Write params to a file to avoid escape hell
+                Set-Content -Path "params.json" -Value $jsonParams
 
-                # Execute the command
-                iex $cmd
+                # Build args as array, avoiding parser issues
+                $args = @(
+                    "ssm", "send-command",
+                    "--document-name", "AWS-RunShellScript",
+                    "--comment", "DeployFlask",
+                    "--instance-ids", "i-0eb4223f049a2edf2",
+                    "--parameters", (Get-Content params.json -Raw),
+                    "--region", "eu-north-1"
+                )
+
+                # Start process
+                Start-Process "aws" -ArgumentList $args -NoNewWindow -Wait
             '''
         }
     }
