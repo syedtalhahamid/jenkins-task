@@ -32,16 +32,18 @@ pipeline {
             }
         }
             
-       stage('Deploy Flask via SSM') {
+              stage('Deploy Flask via SSM') {
             steps {
                 script {
-                    def escapedJson = '{\\"commands\\":[\\"docker pull talhahamidsyed/flask\\", \\"docker rm -f flask || true\\", \\"docker run -d --name flask -p 80:5000 talhahamidsyed/flask\\"]}'
+                    // For Windows 'bat', we need to escape the double quotes differently.
+                    // We will escape each double quote inside the JSON with a backslash.
+                    def windowsJson = '{\\"commands\\": [\\"docker pull talhahamidsyed/flask\\", \\"docker rm -f flask || true\\", \\"docker run -d --name flask -p 80:5000 talhahamidsyed/flask\\"]}'
                     bat """
                         aws ssm send-command ^
                           --document-name "AWS-RunShellScript" ^
                           --comment "Deploying flask via Jenkins" ^
                           --instance-ids i-0eb4223f049a2edf2 ^
-                          --parameters "${escapedJson}" ^
+                          --parameters "${windowsJson}" ^
                           --region eu-north-1
                     """
                 }
