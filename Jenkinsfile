@@ -32,32 +32,35 @@ pipeline {
             }
         }
             
-       stage('Deploy Flask via SSM') {
+     stage('Deploy Flask via SSM') {
     steps {
         powershell '''
-            # 1. Define the commands to run on the EC2 instance.
-            $commandsToRun = @(
+            # Define your commands
+            $commands = @(
                 "docker pull talhahamidsyed/flask",
-                "docker rm -f flask || true",
+                "docker rm -f flask; exit 0",
                 "docker run -d --name flask -p 80:5000 talhahamidsyed/flask"
             )
 
-            # 2. Create a hashtable with proper keys and values.
-            $params = @{ "commands" = $commandsToRun }
+            # Prepare the parameters hashtable
+            $params = @{ commands = $commands }
 
-            # 3. Convert to JSON (compressed) — this time quote all keys/values.
-            $json = $params | ConvertTo-Json -Depth 4 -Compress
-
-            # 4. Escape the double quotes for use inside the shell string
+            # Convert to JSON and escape double quotes
+            $json = $params | ConvertTo-Json -Compress
             $escapedJson = $json -replace '"', '\"'
 
-            # 5. Send the command to AWS SSM
-            aws ssm send-command `
-              --document-name "AWS-RunShellScript" `
-              --comment "Deploying flask via Jenkins" `
-              --instance-ids "i-0eb4223f049a2edf2" `
-              --parameters "{\\\"commands\\\":[\\\"docker pull talhahamidsyed/flask\\\",\\\"docker rm -f flask || true\\\",\\\"docker run -d --name flask -p 80:5000 talhahamidsyed/flask\\\"]}" `
-              --region "eu-north-1"
+            # Run the AWS SSM command
+            $command = @"
+aws ssm send-command `
+  --document-name "AWS-RunShellScript" `
+  --comment "Deploying flask via Jenkins" `
+  --instance-ids "i-0eb4223f049a2edf2" `
+  --parameters "$escapedJson" `
+  --region "eu-north-1"
+"@
+
+            # Execute the command
+            iex $command
         '''
     }
 }
