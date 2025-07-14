@@ -113,7 +113,7 @@ pipeline {
             steps {
                 // Ensure Docker is installed and configured on the Windows Jenkins agent
                 bat '''
-                    docker build -t talhahamidsyed/flask-app .
+                    docker build -t talhahamidsyed/flask .
                 '''
             }
         }
@@ -122,7 +122,7 @@ pipeline {
             steps {
                 withCredentials([usernamePassword(credentialsId: 'dockerhub-cred', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
                     bat 'docker login -u %DOCKER_USER% -p %DOCKER_PASS%'
-                    bat 'docker push talhahamidsyed/flask-app'
+                    bat 'docker push talhahamidsyed/flask'
                 }
             }
         }
