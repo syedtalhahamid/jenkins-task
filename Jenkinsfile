@@ -141,12 +141,12 @@ pipeline {
                     // Use AWS CLI to send the command to the EC2 instance via SSM Run Command
                     // Ensure AWS CLI is configured on the Jenkins agent with permissions to use SSM
                     bat """
-                        aws ssm send-command ^
-                            --instance-ids i-0eb4223f049a2edf2 ^
-                            --document-name "AWS-RunShellScript" ^
-                            --comment "Deploying flask via Jenkins" ^
-                            --parameters commands="${dockerCommands}" ^
-                            --region .eu-north-1
+                        aws ssm send-command 
+                            --instance-ids i-0eb4223f049a2edf2 
+                            --document-name "AWS-RunShellScript" 
+                            --comment "Deploying flask via Jenkins" 
+                            --parameters commands="${dockerCommands}" 
+                            --region eu-north-1
                     """
                 }
             }
