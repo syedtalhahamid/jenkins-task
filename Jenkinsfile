@@ -29,7 +29,7 @@ pipeline {
             }
         }
 
-     stage('Deploy Flask via SSM') {
+        stage('Deploy Flask via SSM') {
             steps {
                 withCredentials([
                     [$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-cred-id']
@@ -47,7 +47,6 @@ pipeline {
                 }
             }
         }
-
 
     }
 }
