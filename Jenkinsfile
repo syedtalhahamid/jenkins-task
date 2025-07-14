@@ -37,25 +37,28 @@ pipeline {
                     powershell '''
                         $commands = @(
                             "docker pull talhahamidsyed/flask",
-                            "docker rm -f flask; exit 0",
+                            "docker rm -f flask || true",
                             "docker run -d --name flask -p 80:5000 talhahamidsyed/flask"
                         )
         
+                        # Convert commands to valid JSON
                         $params = @{ commands = $commands }
-                        $json = $params | ConvertTo-Json -Compress
+                        $jsonParams = $params | ConvertTo-Json -Compress
         
-                        # Wrap JSON in outer quotes and escape inner quotes properly
-                        $escapedJson = '"' + $json.Replace('"', '\\"') + '"'
-        
-                        # Build the command string
-                        $cmd = "aws ssm send-command --document-name AWS-RunShellScript --comment `"Deploying flask`" --instance-ids i-0eb4223f049a2edf2 --parameters $escapedJson --region eu-north-1"
-        
-                        # Execute
-                        iex $cmd
+                        # Run AWS CLI using ArgumentList, don't use iex
+                        Start-Process -FilePath "aws" -ArgumentList @(
+                            "ssm", "send-command",
+                            "--document-name", "AWS-RunShellScript",
+                            "--comment", "Deploy Flask via Jenkins",
+                            "--instance-ids", "i-0eb4223f049a2edf2",
+                            "--parameters", $jsonParams,
+                            "--region", "eu-north-1"
+                        ) -Wait -NoNewWindow
                     '''
                 }
             }
         }
+
     
     }
 }
