@@ -127,39 +127,29 @@ pipeline {
             }
         }
             
-        stage('Deploy to EC2') {
+        stage('Deploy to EC2 via SSM') {
             steps {
                 script {
-                    sshagent(credentials: ['my-new-key-1']) {
-                        def deployCommand = '''
-                            docker pull talhahamidsyed/flask &&
-                            docker stop flask || true &&
-                            docker rm flask || true &&
-                            docker run -d --name flask-app -p 80:5000 talhahamidsyed/flask
-                        '''
-        
-                        // Use powershell instead of bat to ensure better compatibility
-                        powershell """
-                            ssh -o StrictHostKeyChecking=no ubuntu@16.171.136.221 \\
-                            '${deployCommand.replaceAll("\n", " ")}'
-                        """
-                    }
+                    // Define the Docker commands to be executed on the EC2 instance
+                    def dockerCommands = """
+                        #!/bin/bash
+                        docker pull talhahamidsyed/flask
+                        docker rm -f flask || true
+                        docker run -d --name flask-app -p 80:5000 talhahamidsyed/flask
+                    """
+
+                    // Use AWS CLI to send the command to the EC2 instance via SSM Run Command
+                    // Ensure AWS CLI is configured on the Jenkins agent with permissions to use SSM
+                    bat """
+                        aws ssm send-command ^
+                            --instance-ids %TARGET_EC2_INSTANCE_ID% ^
+                            --document-name "AWS-RunShellScript" ^
+                            --comment "Deploying flask-app via Jenkins" ^
+                            --parameters commands="${dockerCommands}" ^
+                            --region %AWS_REGION%
+                    """
                 }
             }
         }
-
-    }
-
-    post {
-        always {
-            echo 'Pipeline finished.'
-        }
-        success {
-            echo 'Deployment successful!'
-        }
-        failure {
-            echo 'Deployment failed!'
-        }
     }
 }
-
