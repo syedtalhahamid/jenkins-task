@@ -30,32 +30,34 @@ pipeline {
         }
 
         stage('Deploy Flask via SSM') {
-            steps {
-                withCredentials([
-                    [$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-cred-id']
-                ]) {
-                    powershell '''
-                        $commands = @(
-                            "docker pull talhahamidsyed/flask",
-                            "docker rm -f flask || true",
-                            "docker run -d --name flask -p 80:5000 talhahamidsyed/flask"
-                        )
-        
-                        $params = @{ commands = $commands }
-                        $jsonParams = $params | ConvertTo-Json -Compress
-        
-                        Start-Process -FilePath "aws" -ArgumentList @(
-                            "ssm", "send-command",
-                            "--document-name", "AWS-RunShellScript",
-                            "--comment", "\"Deploy Flask via Jenkins\"",
-                            "--instance-ids", "i-0eb4223f049a2edf2",
-                            "--parameters", $jsonParams,
-                            "--region", "eu-north-1"
-                        ) -NoNewWindow -Wait
-                    '''
-                }
-            }
+    steps {
+        withCredentials([
+            [$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-cred-id']
+        ]) {
+            powershell '''
+                $commands = @(
+                    "docker pull talhahamidsyed/flask",
+                    "docker rm -f flask || true",
+                    "docker run -d --name flask -p 80:5000 talhahamidsyed/flask"
+                )
+
+                $params = @{ commands = $commands }
+                $jsonParams = $params | ConvertTo-Json -Compress
+
+                $args = @(
+                    "ssm", "send-command",
+                    "--document-name", "AWS-RunShellScript",
+                    "--comment", 'Deploy Flask via Jenkins',
+                    "--instance-ids", "i-0eb4223f049a2edf2",
+                    "--parameters", $jsonParams,
+                    "--region", "eu-north-1"
+                )
+
+                Start-Process -FilePath "aws" -ArgumentList $args -NoNewWindow -Wait
+            '''
         }
+    }
+}
 
     
     }
