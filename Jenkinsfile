@@ -131,7 +131,7 @@ pipeline {
             steps {
                 script {
                     // Define the Docker commands to be executed on the EC2 instance
-                 def dockerCommands = '["docker pull talhahamidsyed/flask", "docker rm -f flask || true", "docker run -d --name flask -p 80:5000 talhahamidsyed/flask"]'
+            def dockerCommands = '"[\\"docker pull talhahamidsyed/flask\\", \\"docker rm -f flask || true\\", \\"docker run -d --name flask -p 80:5000 talhahamidsyed/flask\\"]"'
 
 
                     // Use AWS CLI to send the command to the EC2 instance via SSM Run Command
