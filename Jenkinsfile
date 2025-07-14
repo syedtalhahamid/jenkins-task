@@ -129,15 +129,20 @@ pipeline {
             
         stage('Deploy Flask via SSM') {
             steps {
-                bat '''
-                aws ssm send-command ^
-                  --document-name "AWS-RunShellScript" ^
-                  --comment "Deploying flask via Jenkins" ^
-                  --instance-ids i-0eb4223f049a2edf2 ^
-                  --parameters "{\\"commands\\":[\\"docker pull talhahamidsyed/flask\\", \\"docker rm -f flask || true\\", \\"docker run -d --name flask -p 80:5000 talhahamidsyed/flask\\"]}" ^
-                  --region eu-north-1
-                '''
+                script {
+                    def commandsJson = '{\\"commands\\":[\\"docker pull talhahamidsyed/flask\\", \\"docker rm -f flask || true\\", \\"docker run -d --name flask -p 80:5000 talhahamidsyed/flask\\"]}'
+                    
+                    bat """
+                    aws ssm send-command ^
+                      --document-name "AWS-RunShellScript" ^
+                      --comment "Deploying flask via Jenkins" ^
+                      --instance-ids i-0eb4223f049a2edf2 ^
+                      --parameters "${commandsJson}" ^
+                      --region eu-north-1
+                    """
+                }
             }
         }
+
     }    
 }
