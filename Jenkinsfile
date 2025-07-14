@@ -32,7 +32,7 @@ pipeline {
        stage('Deploy Flask via SSM') {
             steps {
                 withCredentials([
-                    [$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-creds-id']
+                    [$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-cred-id']
                 ]) {
                     powershell '''
                         # 1. Commands to run
