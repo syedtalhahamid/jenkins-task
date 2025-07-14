@@ -132,10 +132,10 @@ pipeline {
                 script {
                     sshagent(credentials: ['my-new-key-1']) {
                         def deployCommand = '''
-                            docker pull talhahamidsyed/flask-app &&
-                            docker stop flask-app || true &&
-                            docker rm flask-app || true &&
-                            docker run -d --name flask-app -p 80:5000 talhahamidsyed/flask-app
+                            docker pull talhahamidsyed/flask &&
+                            docker stop flask || true &&
+                            docker rm flask || true &&
+                            docker run -d --name flask-app -p 80:5000 talhahamidsyed/flask
                         '''
         
                         // Use powershell instead of bat to ensure better compatibility
