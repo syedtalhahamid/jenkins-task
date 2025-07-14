@@ -29,7 +29,7 @@ pipeline {
             }
         }
 
-        stage('Deploy Flask via SSM') {
+   stage('Deploy Flask via SSM') {
     steps {
         withCredentials([
             string(credentialsId: 'AWS_ACCESS_KEY_ID', variable: 'AWS_ACCESS_KEY_ID'),
@@ -46,13 +46,12 @@ pipeline {
                 )
 
                 $params = @{ commands = $commands }
-                $json = $params | ConvertTo-Json -Compress -Depth 3
+                $json = $params | ConvertTo-Json -Compress
 
-                # Properly quote multi-word arguments like the comment
                 Start-Process aws -NoNewWindow -Wait -ArgumentList @(
                     "ssm", "send-command",
                     "--document-name", "AWS-RunShellScript",
-                    "--comment", "\"Deploying flask via Jenkins\"",
+                    "--comment", "Deploying flask via Jenkins",
                     "--instance-ids", "i-0eb4223f049a2edf2",
                     "--parameters", $json,
                     "--region", "eu-north-1"
