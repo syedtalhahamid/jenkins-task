@@ -33,40 +33,34 @@ pipeline {
         }
             
        stage('Deploy Flask via SSM') {
-            steps {
-                powershell '''
-                    # 1. Define the commands to run on the EC2 instance.
-                    $commandsToRun = @(
-                        "docker pull talhahamidsyed/flask",
-                        "docker rm -f flask || true",
-                        "docker run -d --name flask -p 80:5000 talhahamidsyed/flask"
-                    )
+    steps {
+        powershell '''
+            # 1. Define the commands to run on the EC2 instance.
+            $commandsToRun = @(
+                "docker pull talhahamidsyed/flask",
+                "docker rm -f flask || true",
+                "docker run -d --name flask -p 80:5000 talhahamidsyed/flask"
+            )
 
-                    # 2. Create the PowerShell object for the parameters.
-                    $parametersObject = @{
-                        commands = $commandsToRun
-                    }
+            # 2. Create a hashtable with proper keys and values.
+            $params = @{ "commands" = $commandsToRun }
 
-                    # 3. Convert the object into a compact, valid JSON string.
-                    $jsonString = $parametersObject | ConvertTo-Json -Compress -Depth 4
+            # 3. Convert to JSON (compressed) — this time quote all keys/values.
+            $json = $params | ConvertTo-Json -Depth 4 -Compress
 
-                    # 4. THE CRITICAL STEP: Create a new string where every double-quote (")
-                    # is replaced with an escaped double-quote (\"). This makes the string safe
-                    # to be passed on the command line.
-                    $escapedJsonString = $jsonString.Replace('"', '\"')
+            # 4. Escape the double quotes for use inside the shell string
+            $escapedJson = $json -replace '"', '\"'
 
-                    # 5. Build and execute the command.
-                    # We use double quotes around the variable ("$escapedJsonString") so that PowerShell
-                    # expands it to its content. Because the content now has escaped quotes, the
-                    # command will be parsed correctly by the AWS CLI.
-                    aws ssm send-command `
-                      --document-name "AWS-RunShellScript" `
-                      --comment "Deploying flask via Jenkins" `
-                      --instance-ids "i-0eb4223f049a2edf2" `
-                      --parameters "$escapedJsonString" `
-                      --region "eu-north-1"
-                '''
-            }
-        }
+            # 5. Send the command to AWS SSM
+            aws ssm send-command `
+              --document-name "AWS-RunShellScript" `
+              --comment "Deploying flask via Jenkins" `
+              --instance-ids "i-0eb4223f049a2edf2" `
+              --parameters "{\\\"commands\\\":[\\\"docker pull talhahamidsyed/flask\\\",\\\"docker rm -f flask || true\\\",\\\"docker run -d --name flask -p 80:5000 talhahamidsyed/flask\\\"]}" `
+              --region "eu-north-1"
+        '''
+    }
+}
+
     }    
 }
