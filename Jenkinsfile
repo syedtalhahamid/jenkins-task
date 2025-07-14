@@ -135,7 +135,7 @@ pipeline {
                         #!/bin/bash
                         docker pull talhahamidsyed/flask
                         docker rm -f flask || true
-                        docker run -d --name flask-app -p 80:5000 talhahamidsyed/flask
+                        docker run -d --name flask -p 80:5000 talhahamidsyed/flask
                     """
 
                     // Use AWS CLI to send the command to the EC2 instance via SSM Run Command
@@ -144,7 +144,7 @@ pipeline {
                         aws ssm send-command ^
                             --instance-ids %TARGET_EC2_INSTANCE_ID% ^
                             --document-name "AWS-RunShellScript" ^
-                            --comment "Deploying flask-app via Jenkins" ^
+                            --comment "Deploying flask via Jenkins" ^
                             --parameters commands="${dockerCommands}" ^
                             --region %AWS_REGION%
                     """
