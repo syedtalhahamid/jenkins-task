@@ -41,19 +41,17 @@ pipeline {
                             "docker run -d --name flask -p 80:5000 talhahamidsyed/flask"
                         )
         
-                        # Convert commands to valid JSON
                         $params = @{ commands = $commands }
                         $jsonParams = $params | ConvertTo-Json -Compress
         
-                        # Run AWS CLI using ArgumentList, don't use iex
                         Start-Process -FilePath "aws" -ArgumentList @(
                             "ssm", "send-command",
                             "--document-name", "AWS-RunShellScript",
-                            "--comment", "Deploy Flask via Jenkins",
+                            "--comment", "\"Deploy Flask via Jenkins\"",
                             "--instance-ids", "i-0eb4223f049a2edf2",
                             "--parameters", $jsonParams,
                             "--region", "eu-north-1"
-                        ) -Wait -NoNewWindow
+                        ) -NoNewWindow -Wait
                     '''
                 }
             }
