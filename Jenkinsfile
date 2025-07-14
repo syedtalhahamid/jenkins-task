@@ -32,7 +32,7 @@ pipeline {
      stage('Deploy Flask via SSM') {
             steps {
                 withCredentials([
-                    [$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-credentials']
+                    [$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-cred-id']
                 ]) {
                     powershell '''
                         $json = '{\"commands\":[\"docker pull talhahamidsyed/flask\",\"docker rm -f flask || true\",\"docker run -d --name flask -p 80:5000 talhahamidsyed/flask\"]}'
