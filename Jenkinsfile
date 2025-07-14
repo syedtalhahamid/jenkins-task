@@ -29,37 +29,38 @@ pipeline {
             }
         }
 
-                stage('Deploy Flask via SSM') {
-            steps {
-                withCredentials([
-                    string(credentialsId: 'AWS_ACCESS_KEY_ID', variable: 'AWS_ACCESS_KEY_ID'),
-                    string(credentialsId: 'AWS_SECRET_ACCESS_KEY', variable: 'AWS_SECRET_ACCESS_KEY')
-                ]) {
-                    powershell '''
-                        $env:AWS_ACCESS_KEY_ID = "$env:AWS_ACCESS_KEY_ID"
-                        $env:AWS_SECRET_ACCESS_KEY = "$env:AWS_SECRET_ACCESS_KEY"
+        stage('Deploy Flask via SSM') {
+    steps {
+        withCredentials([
+            string(credentialsId: 'AWS_ACCESS_KEY_ID', variable: 'AWS_ACCESS_KEY_ID'),
+            string(credentialsId: 'AWS_SECRET_ACCESS_KEY', variable: 'AWS_SECRET_ACCESS_KEY')
+        ]) {
+            powershell '''
+                $env:AWS_ACCESS_KEY_ID = "$env:AWS_ACCESS_KEY_ID"
+                $env:AWS_SECRET_ACCESS_KEY = "$env:AWS_SECRET_ACCESS_KEY"
 
-                        $commands = @(
-                            "docker pull talhahamidsyed/flask",
-                            "docker rm -f flask; exit 0",
-                            "docker run -d --name flask -p 80:5000 talhahamidsyed/flask"
-                        )
+                $commands = @(
+                    "docker pull talhahamidsyed/flask",
+                    "docker rm -f flask; exit 0",
+                    "docker run -d --name flask -p 80:5000 talhahamidsyed/flask"
+                )
 
-                        $params = @{ commands = $commands }
-                        $json = $params | ConvertTo-Json -Compress -Depth 3
+                $params = @{ commands = $commands }
+                $json = $params | ConvertTo-Json -Compress -Depth 3
 
-                        Start-Process aws -NoNewWindow -Wait -ArgumentList @(
-                            "ssm", "send-command",
-                            "--document-name", "AWS-RunShellScript",
-                            "--comment", "Deploying flask via Jenkins",
-                            "--instance-ids", "i-0eb4223f049a2edf2",
-                            "--parameters", $json,
-                            "--region", "eu-north-1"
-                        )
-                    '''
-                }
-            }
+                # Properly quote multi-word arguments like the comment
+                Start-Process aws -NoNewWindow -Wait -ArgumentList @(
+                    "ssm", "send-command",
+                    "--document-name", "AWS-RunShellScript",
+                    "--comment", "\"Deploying flask via Jenkins\"",
+                    "--instance-ids", "i-0eb4223f049a2edf2",
+                    "--parameters", $json,
+                    "--region", "eu-north-1"
+                )
+            '''
         }
+    }
+}
 
     }
 }
