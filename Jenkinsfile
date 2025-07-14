@@ -30,40 +30,40 @@ pipeline {
         }
 
      stage('Deploy Flask via SSM') {
-    steps {
-        withCredentials([
-            [$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-cred-id']
-        ]) {
-            powershell '''
-                $commands = @(
-                    "docker pull talhahamidsyed/flask",
-                    "docker rm -f flask ; exit 0",
-                    "docker run -d --name flask -p 80:5000 talhahamidsyed/flask"
-                )
-
-                $params = @{ "commands" = $commands }
-                $jsonParams = $params | ConvertTo-Json -Compress
-
-                # Write params to a file to avoid escape hell
-                Set-Content -Path "params.json" -Value $jsonParams
-
-                # Build args as array, avoiding parser issues
-                $args = @(
-                    "ssm", "send-command",
-                    "--document-name", "AWS-RunShellScript",
-                    "--comment", "DeployFlask",
-                    "--instance-ids", "i-0eb4223f049a2edf2",
-                    "--parameters", (Get-Content params.json -Raw),
-                    "--region", "eu-north-1"
-                )
-
-                # Start process
-                Start-Process "aws" -ArgumentList $args -NoNewWindow -Wait
-            '''
+            steps {
+                withCredentials([
+                    [$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-cred-id']
+                ]) {
+                    powershell '''
+                        # Define commands for EC2
+                        $commands = @(
+                            "docker pull talhahamidsyed/flask",
+                            "docker rm -f flask || true",
+                            "docker run -d --name flask -p 80:5000 talhahamidsyed/flask"
+                        )
+        
+                        # Create a proper JSON structure
+                        $jsonObject = @{
+                            commands = $commands
+                        }
+        
+                        # Convert to valid JSON (AWS expects keys in double quotes)
+                        $jsonString = $jsonObject | ConvertTo-Json -Compress -Depth 2
+        
+                        # Surround the whole JSON string with single quotes so it works in command line
+                        $finalParams = "'$jsonString'"
+        
+                        # Call AWS SSM using AWS CLI and pass parameters properly
+                        aws ssm send-command `
+                            --document-name "AWS-RunShellScript" `
+                            --comment "Flask deployment" `
+                            --instance-ids "i-0eb4223f049a2edf2" `
+                            --parameters $finalParams `
+                            --region "eu-north-1"
+                    '''
+                }
+            }
         }
-    }
-}
-
     
     }
 }
