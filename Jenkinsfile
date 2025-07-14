@@ -31,31 +31,31 @@ pipeline {
 
         stage('Deploy Flask via SSM') {
             steps {
-                withCredentials([[
-                    $class: 'AmazonWebServicesCredentialsBinding',
-                    credentialsId: 'aws-cred-id'
-                ]]) {
+                withCredentials([
+                    [$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-cred-id']
+                ]) {
                     powershell '''
                         $commands = @(
                             "docker pull talhahamidsyed/flask",
-                            "try { docker rm -f flask } catch {}",
+                            "docker rm -f flask; exit 0",
                             "docker run -d --name flask -p 80:5000 talhahamidsyed/flask"
                         )
         
                         $params = @{ commands = $commands }
                         $json = $params | ConvertTo-Json -Compress
         
-                        aws ssm send-command `
-                            --document-name "AWS-RunShellScript" `
-                            --comment "Deploying flask" `
-                            --instance-ids "i-0eb4223f049a2edf2" `
-                            --parameters $json `
-                            --region "eu-north-1"
+                        # Wrap JSON in outer quotes and escape inner quotes properly
+                        $escapedJson = '"' + $json.Replace('"', '\\"') + '"'
+        
+                        # Build the command string
+                        $cmd = "aws ssm send-command --document-name AWS-RunShellScript --comment `"Deploying flask`" --instance-ids i-0eb4223f049a2edf2 --parameters $escapedJson --region eu-north-1"
+        
+                        # Execute
+                        iex $cmd
                     '''
                 }
             }
         }
-
-        
+    
     }
 }
