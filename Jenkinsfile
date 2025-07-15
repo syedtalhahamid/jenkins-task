@@ -8,11 +8,7 @@ pipeline {
             }
         }
 
-        stage('Test PowerShell') {
-            steps {
-                powershell 'Write-Output "PowerShell is working!"'
-            }
-        }
+        
 
         stage('Docker Build') {
             steps {
